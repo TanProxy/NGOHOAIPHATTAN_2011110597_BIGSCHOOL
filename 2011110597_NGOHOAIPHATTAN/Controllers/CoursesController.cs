@@ -1,5 +1,6 @@
 ﻿using _2011110597_NGOHOAIPHATTAN.Models;
 using _2011110597_NGOHOAIPHATTAN.ViewModels;
+
 using Microsoft.Ajax.Utilities;
 using Microsoft.AspNet.Identity;
 using System;
@@ -24,7 +25,8 @@ namespace _2011110597_NGOHOAIPHATTAN.Controllers
         {
             var viewModel = new CourseViewModels
             {
-                categories = _dbContext.Categories.ToList()
+                categories = _dbContext.Categories.ToList(),
+                Heading = "Add Course"
             };
             return View(viewModel);
         }
@@ -33,42 +35,55 @@ namespace _2011110597_NGOHOAIPHATTAN.Controllers
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create (CourseViewModels viewModels)
+        public ActionResult Create(CourseViewModels viewModels)
         {
             if (!ModelState.IsValid)
             {
-                viewModels.categories= _dbContext.Categories.ToList();
-                return View("Create",viewModels);
+                viewModels.categories = _dbContext.Categories.ToList();
+                return View("Create", viewModels);
             }
             var course = new Course
             {
                 LecturerId = User.Identity.GetUserId(),
                 DataTime = viewModels.GetDateTime(),
-                CategoryId =  viewModels.Category,
+                CategoryId = viewModels.Category,
                 Place = viewModels.Place
             };
             _dbContext.Courses.Add(course);
             _dbContext.SaveChanges();
-            return RedirectToAction("Index" , "Home");
+            return RedirectToAction("Index", "Home");
 
-            
+
         }
         [Authorize]
         public ActionResult Attending()
         {
-            var userId = User.Identity.GetUserId(); 
+            var userId = User.Identity.GetUserId();
             var courses = _dbContext.Attendances
-                .Where(a=> a.AttendeeId == userId)
-                .Select(a=>a.Course)
+                .Where(a => a.AttendeeId == userId)
+                .Select(a => a.Course)
                 .Include(l => l.Lecturer)
-                .Include (l => l.Category)
+                .Include(l => l.Category)
                 .ToList();
-        }
-        Var viewModel = new CoursesViewModel
-        {
-            UpcommingCourses = courses,
-            ShowAction = User.Identity.IsAuthenticated
-        };
 
+            var viewModel = new CoursesViewModel
+            {
+                UpcommingCourses = courses,
+                ShowAction = User.Identity.IsAuthenticated
+            };
+            return View(viewModel);
+        }
+        public ActionResult Mine()
+        {
+            var userId = User.Identity.GetUserId();
+            var courses = _dbContext.Courses
+                .Where(c => c.LecturerId == userId && c.DataTime> DateTime.Now)
+                .Include(l => l.Lecturer)
+                .Include(l => l.Category)
+                .ToList();
+            return View(courses);
+        }
+       
     }
 }
+    
